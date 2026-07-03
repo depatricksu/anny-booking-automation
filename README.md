@@ -1,10 +1,34 @@
-# Anny Booking Automation
+# 📚 Anny Booking Automation
+
+[![Stars](https://img.shields.io/github/stars/wiestju/anny-booking-automation?style=flat-square)](https://github.com/wiestju/anny-booking-automation/stargazers)
+[![Forks](https://img.shields.io/github/forks/wiestju/anny-booking-automation?style=flat-square)](https://github.com/wiestju/anny-booking-automation/network/members)
+[![License](https://img.shields.io/github/license/wiestju/anny-booking-automation?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.x-blue?style=flat-square)](https://www.python.org/)
+[![Last Commit](https://img.shields.io/github/last-commit/wiestju/anny-booking-automation?style=flat-square)](https://github.com/wiestju/anny-booking-automation/commits/main)
+
+> ⭐ If this saves you the midnight scramble for a study space — give it a star!
+
+---
 
 Automatically reserve study spaces and library seats on [anny.eu](https://anny.eu) — the booking platform used by university libraries across Germany, including the **Karlsruhe Institute of Technology (KIT)** and the **Technical University of Munich (TUM)**.
 
 The script logs in via SAML Single Sign-On (SSO), waits until midnight when new slots open, and instantly books your preferred time slot — fully automated.
 
-## Features
+> 🇩🇪 **Für deutsche Studierende:** Dieses Tool bucht automatisch Lernplätze in der Universitätsbibliothek — jeden Tag um Mitternacht, wenn neue Slots freigegeben werden. Unterstützt KIT, TUM und weitere Anny-basierte Bibliotheken.
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Supported Universities](#-supported-universities)
+- [Quick Start](#-quick-start)
+- [AI-Assisted Setup](#-ai-assisted-setup)
+- [GitHub Actions + cron-job.org (detailed)](#option-a-github-actions--cron-joborg)
+- [Self-hosted Linux Cron (detailed)](#option-b-self-hosted-linux-cron)
+- [Project Structure](#-project-structure)
+- [Adding a New SSO Provider](#-adding-a-new-sso-provider)
+- [Contributing](#-contributing)
+
+## ✨ Features
 
 - **Auto-discovery** — Automatically detects your library's resource and service IDs after login; no manual API research needed
 - **Pluggable SSO** — Built-in providers for KIT (Karlsruhe Institute of Technology) and TUM (Technical University of Munich); easily extendable for other universities
@@ -14,7 +38,7 @@ The script logs in via SAML Single Sign-On (SSO), waits until midnight when new 
 - **Environment-based config** — All settings via `.env` file or GitHub Secrets; no code changes required
 - **Flexible execution** — Runs via GitHub Actions + cron-job.org (no server needed), or as a self-hosted Linux cron job
 
-## Supported Universities
+## 🏫 Supported Universities
 
 | University | SSO Provider | Status |
 | --- | --- | --- |
@@ -22,14 +46,55 @@ The script logs in via SAML Single Sign-On (SSO), waits until midnight when new 
 | Technical University of Munich (TUM) | `tum` | ✅ Supported |
 | Other Anny-based libraries | Custom provider | See [Adding a New SSO Provider](#adding-a-new-sso-provider) |
 
-## Quick Start
+## ⚡ Quick Start
 
-Choose your setup path and jump to the relevant section:
+No server needed — the recommended path runs entirely on GitHub Actions (free).
 
-- **[Option A: GitHub Actions + cron-job.org](#option-a-github-actions--cron-joborg)** — No server needed. Fork the repo, add secrets, done.
-- **[Option B: Self-hosted Linux Cron](#option-b-self-hosted-linux-cron)** — Clone, configure a `.env` file, and run on your own server.
+**1.** [Fork this repo](https://github.com/wiestju/anny-booking-automation/fork) → set your fork to **private** (Settings → Danger Zone → Change visibility)
 
-## Automated Scheduling
+**2.** Add secrets in your fork under **Settings → Secrets and variables → Actions:**
+
+| Secret | Value |
+| ------ | ----- |
+| `USERNAME` | Your university login |
+| `PASSWORD` | Your university password |
+| `SSO_PROVIDER` | `kit` or `tum` |
+| `TIMEZONE` | `Europe/Berlin` |
+| `BOOKING_TIMES` | `14:00:00-19:00:00, 09:00:00-13:00:00, 20:00:00-23:45:00` |
+| `USE_ANY_RESOURCE_ID` | `True` |
+
+**3.** Create a [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope.
+
+**4.** Create a free cron job at [cron-job.org](https://cron-job.org) — POST to:
+
+```text
+https://api.github.com/repos/YOUR_USERNAME/anny-booking-automation/actions/workflows/schedule.yml/dispatches
+```
+
+Schedule: `58 23 * * *` · Header: `Authorization: Bearer YOUR_TOKEN` · Body: `{"ref": "main"}`
+
+**5.** Test it: go to **Actions → Daily Library Reservation Automation → Run workflow** in your fork.
+
+→ [Full setup details below](#-automated-scheduling) · [Prefer AI to guide you? Skip here](#-ai-assisted-setup)
+
+## 🤖 AI-Assisted Setup
+
+The setup involves a few platforms (GitHub, cron-job.org) and can be tricky. The fastest way to get through it is to let an AI guide you interactively.
+
+Copy this prompt into [Claude](https://claude.ai) or ChatGPT:
+
+```text
+I want to set up anny-booking-automation to automatically book library seats at my university.
+The repo is: https://github.com/wiestju/anny-booking-automation
+
+Please guide me through the full setup step by step, asking me one question at a time.
+My university is: [KIT / TUM / other]
+```
+
+The AI will walk you through forking the repo, adding your credentials as GitHub Secrets, creating an access token, and configuring cron-job.org — one step at a time.
+
+
+## 🤖 Automated Scheduling
 
 Two options are supported: **GitHub Actions** (no server needed) or a **self-hosted Linux cron job** (for users who run their own server).
 
@@ -179,7 +244,7 @@ The script activates the virtual environment and runs `main.py` automatically. L
 
 > **Timezone note:** The script uses the `TIMEZONE` env var to determine when midnight occurs. Make sure your server's local time matches your target timezone, or set `TIMEZONE` explicitly in your `.env`.
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 anny-booking-automation/
@@ -201,7 +266,7 @@ anny-booking-automation/
     └── helpers.py          # Utility functions
 ```
 
-## Adding a New SSO Provider
+## 🔧 Adding a New SSO Provider
 
 To add support for another university that uses Anny for library bookings, create `auth/providers/youruni.py`:
 
@@ -234,6 +299,12 @@ PROVIDERS = {
 
 Then set `SSO_PROVIDER="youruni"` in your `.env` file.
 
-## License
+## 🤝 Contributing
+
+PRs are welcome — especially new SSO providers for other universities that use Anny!
+
+If your university uses [anny.eu](https://anny.eu) for library bookings and isn't listed yet, feel free to open an issue or submit a provider implementation.
+
+## 📄 License
 
 MIT
