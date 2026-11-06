@@ -97,11 +97,21 @@ def load_favorites(ref):
     safe_print(f"{ts()}    (starred in anny; disable with USE_ANNY_FAVORITES=False)")
 
 
-def _today_at(time_str, tz):
-    """'HH:MM:SS' → today's aware datetime in the configured timezone."""
+def _today_at(time_str, tz, now=None, grace=datetime.timedelta(minutes=2)):
+    """'HH:MM:SS' → the next occurrence of that time (aware, configured timezone).
+
+    Today's time if it is still ahead (or passed less than `grace` ago),
+    otherwise tomorrow's — so a midnight opening (e.g. LMU, 00:00) is found by a
+    run started shortly before midnight.
+    """
     h, m, s = (int(x) for x in time_str.split(':'))
-    now = datetime.datetime.now(tz)
-    return tz.localize(datetime.datetime(now.year, now.month, now.day, h, m, s))
+    now = now or datetime.datetime.now(tz)
+    day = now.date()
+    dt = tz.localize(datetime.datetime(day.year, day.month, day.day, h, m, s))
+    if dt < now - grace:
+        day += datetime.timedelta(days=1)
+        dt = tz.localize(datetime.datetime(day.year, day.month, day.day, h, m, s))
+    return dt
 
 
 def book_window(cookies, cust_id, resource_urls, resources, window, tz, deadline=None):
