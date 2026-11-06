@@ -1,11 +1,13 @@
 from auth.providers.base import SSOProvider
 from auth.providers.kit import KITProvider
+from auth.providers.lmu import LMUProvider
 from auth.providers.tum import TUMProvider
 
 # Registry of available SSO providers
 PROVIDERS: dict[str, type[SSOProvider]] = {
     "kit": KITProvider,
-    "tum": TUMProvider
+    "tum": TUMProvider,
+    "lmu": LMUProvider,
 }
 
 

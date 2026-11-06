@@ -56,6 +56,7 @@ reserves a single seat per time slot, exactly as you would by hand.
 | --- | --- | --- |
 | Karlsruhe Institute of Technology (KIT) | `kit` | ✅ Supported |
 | Technical University of Munich (TUM) | `tum` | ✅ Supported |
+| Ludwig-Maximilians-Universität München (LMU) | `lmu` | 🧪 Added (login flow mirrors TUM; not yet verified with a real account) |
 | Other anny-based libraries | Custom provider | [Add yours →](#-adding-a-new-university) |
 
 ## ⚡ Quick Start
@@ -120,7 +121,7 @@ Secrets/Variables). Only `USERNAME`/`PASSWORD` are required.
 | Variable | Default | Description |
 | --- | --- | --- |
 | `USERNAME`, `PASSWORD` | — | Your university SSO credentials (required). |
-| `SSO_PROVIDER` | `kit` | Which SSO provider to use (`kit`, `tum`, …). |
+| `SSO_PROVIDER` | `kit` | Which SSO provider to use (`kit`, `tum`, `lmu`, …). |
 | `BOOKING_MODE` | `opening` | `opening` = book at each floor's real opening time; `immediate` = book what's free now. |
 | `BOOK_DAYS_AHEAD` | `4` | Book the day this many days ahead. |
 | `BOOKING_TIMES` | 3 windows | Comma-separated `HH:MM:SS-HH:MM:SS` windows, in priority order. |

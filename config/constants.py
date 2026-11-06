@@ -20,7 +20,7 @@ PASSWORD = getenv("PASSWORD")
 
 TIMEZONE = getenv("TIMEZONE") or "Europe/Berlin"
 
-# Provider — available: kit, tum (add more in auth/providers/)
+# Provider — available: kit, tum, lmu (add more in auth/providers/)
 SSO_PROVIDER = getenv("SSO_PROVIDER") or "kit"
 
 # Resource config is optional: if unset, the tool auto-discovers all bookable

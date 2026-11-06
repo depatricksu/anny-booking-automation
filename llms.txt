@@ -26,7 +26,7 @@ The user must fork `https://github.com/wiestju/anny-booking-automation` on GitHu
 In the forked repository under Settings > Secrets and variables > Actions, the user must add:
 - `USERNAME` — their university login (e.g. KIT account: firstname.lastname@student.kit.edu or just the shorthand)
 - `PASSWORD` — their university password
-- `SSO_PROVIDER` — `kit` for KIT, `tum` for TUM
+- `SSO_PROVIDER` — `kit` for KIT, `tum` for TUM, `lmu` for LMU
 - `TIMEZONE` — e.g. `Europe/Berlin`
 - `BOOKING_TIMES` — comma-separated slots in format `HH:MM:SS-HH:MM:SS`, e.g. `14:00:00-19:00:00, 09:00:00-13:00:00, 20:00:00-23:45:00`
 - `USE_ANY_RESOURCE_ID` — set to `True` to book any available desk (recommended)
