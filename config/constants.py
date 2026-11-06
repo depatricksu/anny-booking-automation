@@ -68,6 +68,14 @@ SNIPE_WINDOW_S = int(getenv("SNIPE_WINDOW_S") or "20")
 # the LMU library's Terms of Use / Privacy Policy. Only list ones you agreed to.
 ACCEPT_AGREEMENTS = [a.strip() for a in (getenv("ACCEPT_AGREEMENTS") or "").split(",") if a.strip()]
 
+# MAX_BOOKINGS=1 → BOOKING_TIMES become alternatives: tried one after another in
+# priority order, stopping at the first success (one booking per run). Empty /
+# 0 = book one resource per time window (default).
+MAX_BOOKINGS = int(getenv("MAX_BOOKINGS") or "0")
+
+# Last day that may be booked (YYYY-MM-DD), e.g. the end of the semester.
+BOOK_UNTIL = (getenv("BOOK_UNTIL") or "").strip() or None
+
 # Only book when the target day falls on one of these weekdays (comma-separated,
 # e.g. "fri" or "mon,wed,fri"). Empty = every day.
 _WEEKDAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]

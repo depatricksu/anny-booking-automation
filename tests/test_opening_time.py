@@ -32,3 +32,11 @@ def test_weekday_filter(monkeypatch):
     assert not main.target_day_allowed(datetime.date(2026, 11, 14))  # Sat
     monkeypatch.setattr(main, "BOOK_WEEKDAYS", [])
     assert main.target_day_allowed(datetime.date(2026, 11, 14))
+
+
+def test_book_until(monkeypatch):
+    import main
+    monkeypatch.setattr(main, "BOOK_WEEKDAYS", [])
+    monkeypatch.setattr(main, "BOOK_UNTIL", "2027-03-31")
+    assert main.target_day_allowed(datetime.date(2027, 3, 31))
+    assert not main.target_day_allowed(datetime.date(2027, 4, 2))

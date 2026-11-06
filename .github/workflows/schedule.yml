@@ -55,5 +55,7 @@ jobs:
           USE_ANNY_FAVORITES: ${{ vars[format('{0}_USE_ANNY_FAVORITES', matrix.uni)] || vars.USE_ANNY_FAVORITES }}
           BOOK_WEEKDAYS: ${{ vars[format('{0}_BOOK_WEEKDAYS', matrix.uni)] || vars.BOOK_WEEKDAYS }}
           ACCEPT_AGREEMENTS: ${{ vars[format('{0}_ACCEPT_AGREEMENTS', matrix.uni)] || vars.ACCEPT_AGREEMENTS }}
+          MAX_BOOKINGS: ${{ vars[format('{0}_MAX_BOOKINGS', matrix.uni)] || vars.MAX_BOOKINGS }}
+          BOOK_UNTIL: ${{ vars[format('{0}_BOOK_UNTIL', matrix.uni)] || vars.BOOK_UNTIL }}
           SNIPE_ACTIVATE_MIN: ${{ vars[format('{0}_SNIPE_ACTIVATE_MIN', matrix.uni)] || vars.SNIPE_ACTIVATE_MIN }}
         run: python main.py

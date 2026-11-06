@@ -29,11 +29,13 @@ from booking.client import BookingClient, CheckoutException, TermsNotAcceptedExc
 from booking.selection import order_resources, select_floors
 from config.constants import (
     BOOK_DAYS_AHEAD,
+    BOOK_UNTIL,
     BOOK_WEEKDAYS,
     BOOKING_MODE,
     BOOKING_TIMES,
     DISCOVER_SLOTS,
     FLOORS,
+    MAX_BOOKINGS,
     PASSWORD,
     PREFERRED_RESOURCES,
     SNIPE_ACTIVATE_MIN,
@@ -116,7 +118,9 @@ def _today_at(time_str, tz, now=None, grace=datetime.timedelta(minutes=2)):
 
 
 def target_day_allowed(target_date):
-    """BOOK_WEEKDAYS filter: True if no filter is set or target_date matches."""
+    """BOOK_WEEKDAYS / BOOK_UNTIL filter: True if target_date may be booked."""
+    if BOOK_UNTIL and target_date > datetime.date.fromisoformat(BOOK_UNTIL):
+        return False
     return not BOOK_WEEKDAYS or target_date.weekday() in BOOK_WEEKDAYS
 
 
@@ -239,7 +243,7 @@ def run_opening_mode(cookies, session, ref, tz):
 
     target = nearest.date() + datetime.timedelta(days=BOOK_DAYS_AHEAD)
     if not target_day_allowed(target):
-        safe_print(f"{ts()} Target day {target:%a %d.%m.} not in BOOK_WEEKDAYS — exiting.")
+        safe_print(f"{ts()} Target day {target:%a %d.%m.} not in BOOK_WEEKDAYS / after BOOK_UNTIL — exiting.")
         return
 
     safe_print(f"{ts()} ── opening mode — target +{BOOK_DAYS_AHEAD}d, {len(upcoming)} floor(s) ──")
@@ -259,6 +263,17 @@ def run_opening_mode(cookies, session, ref, tz):
             continue
 
         deadline = fire + datetime.timedelta(seconds=SNIPE_WINDOW_S)
+        if MAX_BOOKINGS == 1:
+            # Windows are alternatives: first one that books wins.
+            for w in BOOKING_TIMES:
+                if book_window(cookies, session.customer_account_id, [(url, svc)],
+                               resources, w, tz, deadline) == 'booked':
+                    secured.add(w['start'])
+                    break
+            if secured:
+                safe_print(f"{ts()} One booking secured (MAX_BOOKINGS=1) — done.")
+                break
+            continue
         pending = [w for w in BOOKING_TIMES if w['start'] not in secured]
         # Run the (still-unsecured) time windows in parallel — one thread per
         # window; each books a single seat sequentially (favorites first).
@@ -285,7 +300,7 @@ def run_immediate_mode(cookies, session, ref, tz):
     The time windows run in parallel; each books a single seat sequentially."""
     target = datetime.datetime.now(tz).date() + datetime.timedelta(days=BOOK_DAYS_AHEAD)
     if not target_day_allowed(target):
-        safe_print(f"{ts()} Target day {target:%a %d.%m.} not in BOOK_WEEKDAYS — exiting.")
+        safe_print(f"{ts()} Target day {target:%a %d.%m.} not in BOOK_WEEKDAYS / after BOOK_UNTIL — exiting.")
         return
     safe_print(f"{ts()} ── immediate mode — target +{BOOK_DAYS_AHEAD}d ──")
     sel = [(url, svc) for url, svc, _ in floors_of(ref)]
@@ -305,6 +320,13 @@ def run_immediate_mode(cookies, session, ref, tz):
         return book_window(cookies, session.customer_account_id, sel, resources, window, tz)
 
     secured = set()
+    if MAX_BOOKINGS == 1:
+        for w in BOOKING_TIMES:
+            if handle(w) == 'booked':
+                secured.add(w['start'])
+                break
+        safe_print(f"{ts()} Done. Secured: {sorted(secured) or 'nothing'}")
+        return
     with ThreadPoolExecutor(max_workers=len(BOOKING_TIMES)) as ex:
         futs = {ex.submit(handle, w): w for w in BOOKING_TIMES}
         for fut in as_completed(futs):
