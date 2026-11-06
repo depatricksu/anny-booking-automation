@@ -25,10 +25,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pytz
 
 from auth.session import AnnySession
-from booking.client import BookingClient, CheckoutException
+from booking.client import BookingClient, CheckoutException, TermsNotAcceptedException
 from booking.selection import order_resources, select_floors
 from config.constants import (
     BOOK_DAYS_AHEAD,
+    BOOK_WEEKDAYS,
     BOOKING_MODE,
     BOOKING_TIMES,
     DISCOVER_SLOTS,
@@ -114,6 +115,11 @@ def _today_at(time_str, tz, now=None, grace=datetime.timedelta(minutes=2)):
     return dt
 
 
+def target_day_allowed(target_date):
+    """BOOK_WEEKDAYS filter: True if no filter is set or target_date matches."""
+    return not BOOK_WEEKDAYS or target_date.weekday() in BOOK_WEEKDAYS
+
+
 def book_window(cookies, cust_id, resource_urls, resources, window, tz, deadline=None):
     """
     Book ONE seat for a single time window, trying resources strictly one at a
@@ -142,6 +148,9 @@ def book_window(cookies, cust_id, resource_urls, resources, window, tz, deadline
         while True:
             try:
                 r = client.reserve((rid, svc), start, end)
+            except TermsNotAcceptedException:
+                status = 'terms'
+                break
             except CheckoutException:
                 status = 'limit'
                 break
@@ -157,7 +166,7 @@ def book_window(cookies, cust_id, resource_urls, resources, window, tz, deadline
                 time.sleep(0.4)  # 'not yet open' / brief 429 — retry same seat
                 continue
             break
-        if status in ('booked', 'limit'):
+        if status in ('booked', 'limit', 'terms'):
             break
 
     if status == 'booked':
@@ -166,6 +175,8 @@ def book_window(cookies, cust_id, resource_urls, resources, window, tz, deadline
         safe_print(f"{ts()} {label} ✅ BOOKED resource={booked_rid}{seat}{star}")
     elif status == 'limit':
         safe_print(f"{ts()} {label} ⚠️ Booking limit — this window is already taken")
+    elif status == 'terms':
+        safe_print(f"{ts()} {label} ❌ NOT booked — the library's own terms must be accepted at checkout")
     return status
 
 
@@ -226,6 +237,11 @@ def run_opening_mode(cookies, session, ref, tz):
                    f"({mins:.0f} min away) — exiting, cron will re-check.")
         return
 
+    target = nearest.date() + datetime.timedelta(days=BOOK_DAYS_AHEAD)
+    if not target_day_allowed(target):
+        safe_print(f"{ts()} Target day {target:%a %d.%m.} not in BOOK_WEEKDAYS — exiting.")
+        return
+
     safe_print(f"{ts()} ── opening mode — target +{BOOK_DAYS_AHEAD}d, {len(upcoming)} floor(s) ──")
     for fire, _, _, name in upcoming:
         safe_print(f"{ts()}   {fire.strftime('%H:%M:%S')}  {name}")
@@ -267,6 +283,10 @@ def run_opening_mode(cookies, session, ref, tz):
 def run_immediate_mode(cookies, session, ref, tz):
     """Book whatever is available right now for the target day (classic flow).
     The time windows run in parallel; each books a single seat sequentially."""
+    target = datetime.datetime.now(tz).date() + datetime.timedelta(days=BOOK_DAYS_AHEAD)
+    if not target_day_allowed(target):
+        safe_print(f"{ts()} Target day {target:%a %d.%m.} not in BOOK_WEEKDAYS — exiting.")
+        return
     safe_print(f"{ts()} ── immediate mode — target +{BOOK_DAYS_AHEAD}d ──")
     sel = [(url, svc) for url, svc, _ in floors_of(ref)]
     if not sel:

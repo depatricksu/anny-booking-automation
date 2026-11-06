@@ -14,6 +14,10 @@ from config.constants import (
 from utils.helpers import ts
 
 
+class TermsNotAcceptedException(Exception):
+    """Checkout rejected because the organization's own terms were not accepted."""
+
+
 class CheckoutException(Exception):
     pass
 
@@ -425,10 +429,12 @@ class BookingClient:
 
         if not final.ok:
             print(f"{ts()} ❌ Checkout failed: HTTP {final.status_code} ({final_elapsed:.0f}ms) resource={rid_label}")
+            detail = ""
             try:
                 errors = final.json().get("errors", [])
                 if errors:
-                    print(f"    {errors[0].get('title', '?')}: {errors[0].get('detail', '?')}")
+                    detail = str(errors[0].get('detail', ''))
+                    print(f"    {errors[0].get('title', '?')}: {detail or '?'}")
             except Exception:
                 pass
             clear = self.session.get(
@@ -439,6 +445,8 @@ class BookingClient:
                 print(f"{ts()} Cart cleared — booking quota restored.")
             else:
                 print(f"{ts()} ⚠️ Cart could not be cleared — quota may be locked for ~15 min.")
+            if final.status_code == 422 and ("akzeptiert" in detail or "accepted" in detail.lower()):
+                raise TermsNotAcceptedException(detail)
             raise CheckoutException
 
         total_elapsed = (_time.monotonic() - t0) * 1000

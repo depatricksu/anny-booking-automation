@@ -63,6 +63,15 @@ SNIPE_ACTIVATE_MIN = int(getenv("SNIPE_ACTIVATE_MIN") or "20")
 # long (absorbs clock jitter / a few seconds of "not yet open").
 SNIPE_WINDOW_S = int(getenv("SNIPE_WINDOW_S") or "20")
 
+# Only book when the target day falls on one of these weekdays (comma-separated,
+# e.g. "fri" or "mon,wed,fri"). Empty = every day.
+_WEEKDAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+BOOK_WEEKDAYS = sorted({
+    _WEEKDAY_NAMES.index(d.strip().lower()[:3])
+    for d in (getenv("BOOK_WEEKDAYS") or "").split(",")
+    if d.strip() and d.strip().lower()[:3] in _WEEKDAY_NAMES
+})
+
 # Print the services/opening-hours anny offers for the resource, then continue
 DISCOVER_SLOTS = getenv("DISCOVER_SLOTS") == "True"
 

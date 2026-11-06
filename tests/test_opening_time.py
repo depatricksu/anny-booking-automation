@@ -23,3 +23,12 @@ def test_opening_later_today_unchanged():
 
 def test_just_passed_opening_stays_today():
     assert _today_at("00:00:00", TZ, now=at(2026, 11, 7, 0, 1)) == at(2026, 11, 7, 0, 0)
+
+
+def test_weekday_filter(monkeypatch):
+    import main
+    monkeypatch.setattr(main, "BOOK_WEEKDAYS", [4])  # Friday
+    assert main.target_day_allowed(datetime.date(2026, 11, 13))      # Fri
+    assert not main.target_day_allowed(datetime.date(2026, 11, 14))  # Sat
+    monkeypatch.setattr(main, "BOOK_WEEKDAYS", [])
+    assert main.target_day_allowed(datetime.date(2026, 11, 14))

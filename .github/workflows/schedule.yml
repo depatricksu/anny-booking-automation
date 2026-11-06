@@ -10,8 +10,10 @@ on:
   # midnight (LMU_SNIPE_ACTIVATE_MIN=45). Two entries cover CET and CEST; the
   # one that is not ~30 min before midnight exits immediately.
   schedule:
-    - cron: '30 22 * * *'   # 23:30 CET (winter)
-    - cron: '30 21 * * *'   # 23:30 CEST (summer)
+    # Thursday nights only: Friday 00:00 releases the Friday one week later
+    # (LMU_BOOK_WEEKDAYS=fri). Use '* * *' instead of '* * 4' for every night.
+    - cron: '30 22 * * 4'   # Thu 23:30 CET (winter)
+    - cron: '30 21 * * 4'   # Thu 23:30 CEST (summer)
 
 jobs:
   book:
@@ -51,5 +53,6 @@ jobs:
           FLOORS: ${{ vars[format('{0}_FLOORS', matrix.uni)] || vars.FLOORS }}
           PREFERRED_RESOURCES: ${{ vars[format('{0}_PREFERRED_RESOURCES', matrix.uni)] || vars.PREFERRED_RESOURCES }}
           USE_ANNY_FAVORITES: ${{ vars[format('{0}_USE_ANNY_FAVORITES', matrix.uni)] || vars.USE_ANNY_FAVORITES }}
+          BOOK_WEEKDAYS: ${{ vars[format('{0}_BOOK_WEEKDAYS', matrix.uni)] || vars.BOOK_WEEKDAYS }}
           SNIPE_ACTIVATE_MIN: ${{ vars[format('{0}_SNIPE_ACTIVATE_MIN', matrix.uni)] || vars.SNIPE_ACTIVATE_MIN }}
         run: python main.py
