@@ -127,6 +127,7 @@ Secrets/Variables). Only `USERNAME`/`PASSWORD` are required.
 | `BOOKING_TIMES` | 3 windows | Comma-separated `HH:MM:SS-HH:MM:SS` windows, in priority order. |
 | `FLOORS` | *(all)* | Empty = all floors. Otherwise a comma-separated priority list of name/slug substrings, e.g. `lehrbuchsammlung`. |
 | `PREFERRED_RESOURCES` | *(none)* | Favorite seats tried first, e.g. `A1.007`. Find names via `scripts/list_resources.py`. |
+| `ACCEPT_AGREEMENTS` | *(none)* | Library-specific checkout agreements you accept, e.g. `lmu-ub` (LMU library Terms of Use / Privacy Policy). Required for LMU. |
 | `BOOK_WEEKDAYS` | *(every day)* | Only book when the target day is one of these, e.g. `fri` or `mon,wed,fri`. |
 | `USE_ANNY_FAVORITES` | `True` | Also auto-prioritize the seats/floors you starred in anny. |
 | `SNIPE_ACTIVATE_MIN` | `20` | Opening mode: only wake up when an opening is within N minutes. |

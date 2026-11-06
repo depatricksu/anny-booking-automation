@@ -4,6 +4,7 @@ import requests
 from requests.exceptions import JSONDecodeError
 
 from config.constants import (
+    ACCEPT_AGREEMENTS,
     ANNY_BASE_URL,
     BOOKING_API_BASE,
     CHECKOUT_FORM_API,
@@ -419,6 +420,7 @@ class BookingClient:
                     "email": customer.get("email")
                 },
                 "accept_terms": True,
+                **({"agreements": {key: True for key in ACCEPT_AGREEMENTS}} if ACCEPT_AGREEMENTS else {}),
                 "payment_method": "",
                 "success_url": f"{ANNY_BASE_URL}/checkout/success?oids={oid}&oats={oat}",
                 "cancel_url": f"{ANNY_BASE_URL}/checkout?step=checkout&childResource={ids[0]}",
@@ -446,6 +448,8 @@ class BookingClient:
             else:
                 print(f"{ts()} ⚠️ Cart could not be cleared — quota may be locked for ~15 min.")
             if final.status_code == 422 and ("akzeptiert" in detail or "accepted" in detail.lower()):
+                print(f"{ts()} ℹ️ This library requires its own agreement at checkout. If you accept it, "
+                      f"add its key to ACCEPT_AGREEMENTS (LMU library: \"lmu-ub\").")
                 raise TermsNotAcceptedException(detail)
             raise CheckoutException
 

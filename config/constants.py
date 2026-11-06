@@ -63,6 +63,11 @@ SNIPE_ACTIVATE_MIN = int(getenv("SNIPE_ACTIVATE_MIN") or "20")
 # long (absorbs clock jitter / a few seconds of "not yet open").
 SNIPE_WINDOW_S = int(getenv("SNIPE_WINDOW_S") or "20")
 
+# Organization-specific checkout agreements you accept for every booking
+# (comma-separated keys of the "agreements.<key>" checkboxes), e.g. "lmu-ub" for
+# the LMU library's Terms of Use / Privacy Policy. Only list ones you agreed to.
+ACCEPT_AGREEMENTS = [a.strip() for a in (getenv("ACCEPT_AGREEMENTS") or "").split(",") if a.strip()]
+
 # Only book when the target day falls on one of these weekdays (comma-separated,
 # e.g. "fri" or "mon,wed,fri"). Empty = every day.
 _WEEKDAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]

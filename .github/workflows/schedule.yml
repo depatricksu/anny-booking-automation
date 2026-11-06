@@ -54,5 +54,6 @@ jobs:
           PREFERRED_RESOURCES: ${{ vars[format('{0}_PREFERRED_RESOURCES', matrix.uni)] || vars.PREFERRED_RESOURCES }}
           USE_ANNY_FAVORITES: ${{ vars[format('{0}_USE_ANNY_FAVORITES', matrix.uni)] || vars.USE_ANNY_FAVORITES }}
           BOOK_WEEKDAYS: ${{ vars[format('{0}_BOOK_WEEKDAYS', matrix.uni)] || vars.BOOK_WEEKDAYS }}
+          ACCEPT_AGREEMENTS: ${{ vars[format('{0}_ACCEPT_AGREEMENTS', matrix.uni)] || vars.ACCEPT_AGREEMENTS }}
           SNIPE_ACTIVATE_MIN: ${{ vars[format('{0}_SNIPE_ACTIVATE_MIN', matrix.uni)] || vars.SNIPE_ACTIVATE_MIN }}
         run: python main.py
