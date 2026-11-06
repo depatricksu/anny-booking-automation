@@ -5,6 +5,13 @@ name: Library Reservation
 # delayed by 10-15 min — which matters for hitting the exact opening time.
 on:
   workflow_dispatch:
+  # Nightly run for LMU's 00:00 (Europe/Berlin) release. GitHub cron is UTC and
+  # may start 10-15 min late, so start ~23:30 Berlin and let the job wait for
+  # midnight (LMU_SNIPE_ACTIVATE_MIN=45). Two entries cover CET and CEST; the
+  # one that is not ~30 min before midnight exits immediately.
+  schedule:
+    - cron: '30 22 * * *'   # 23:30 CET (winter)
+    - cron: '30 21 * * *'   # 23:30 CEST (summer)
 
 jobs:
   book:
@@ -44,4 +51,5 @@ jobs:
           FLOORS: ${{ vars[format('{0}_FLOORS', matrix.uni)] || vars.FLOORS }}
           PREFERRED_RESOURCES: ${{ vars[format('{0}_PREFERRED_RESOURCES', matrix.uni)] || vars.PREFERRED_RESOURCES }}
           USE_ANNY_FAVORITES: ${{ vars[format('{0}_USE_ANNY_FAVORITES', matrix.uni)] || vars.USE_ANNY_FAVORITES }}
+          SNIPE_ACTIVATE_MIN: ${{ vars[format('{0}_SNIPE_ACTIVATE_MIN', matrix.uni)] || vars.SNIPE_ACTIVATE_MIN }}
         run: python main.py
