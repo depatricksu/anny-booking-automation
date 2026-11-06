@@ -135,6 +135,22 @@ Booking exactly one seat per time window is the default. The windows are attempt
 parallel; within each, seats are tried one at a time — favorites first — stopping on the
 first success.
 
+## 👥 Multiple accounts (e.g. LMU + TUM)
+
+**Locally:** put each account in its own file in the repo root — e.g. `lmu.env` and
+`tum.env` (copies of `.env.example`; `*.env` is git-ignored) — and run them in parallel:
+
+```bash
+scripts/run_all.sh                 # every *.env file
+scripts/run_all.sh lmu.env tum.env # or pick
+ENV_FILE=tum.env venv/bin/python scripts/check_advance.py   # any script, one account
+```
+
+**GitHub Actions:** the workflow runs one job per university. Add secrets
+`LMU_USERNAME`/`LMU_PASSWORD` and/or `TUM_USERNAME`/`TUM_PASSWORD`; jobs without a username
+secret are skipped. Variables can be per-university (`LMU_FLOORS`, `TUM_BOOK_DAYS_AHEAD`, …)
+or shared (`FLOORS`, …). LMU opens slots 7 days ahead at 00:00, so set `LMU_BOOK_DAYS_AHEAD=7`.
+
 ## 🎯 How booking works
 
 ### Opening mode (default)

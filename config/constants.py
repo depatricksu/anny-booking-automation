@@ -12,8 +12,9 @@ DEFAULT_HEADERS = {
     'accept-encoding': 'plain'
 }
 
-# Get variables from dotenv file
-load_dotenv('.env', override=True)
+# Get variables from dotenv file. ENV_FILE picks another file, e.g. one per
+# university account: ENV_FILE=lmu.env python main.py
+load_dotenv(getenv("ENV_FILE") or '.env', override=True)
 
 USERNAME = getenv("USERNAME")
 PASSWORD = getenv("PASSWORD")

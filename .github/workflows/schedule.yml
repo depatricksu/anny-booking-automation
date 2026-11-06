@@ -9,24 +9,39 @@ on:
 jobs:
   book:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # One job per account. Each uses secrets <UNI>_USERNAME / <UNI>_PASSWORD
+        # and optional variables <UNI>_FLOORS, <UNI>_BOOK_DAYS_AHEAD, ...
+        # (falling back to the unprefixed variable). A job whose username
+        # secret is missing is skipped.
+        uni: [LMU, TUM]
+    env:
+      HAS_ACCOUNT: ${{ secrets[format('{0}_USERNAME', matrix.uni)] != '' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - if: env.HAS_ACCOUNT != 'true'
+        run: echo "No ${{ matrix.uni }}_USERNAME secret - skipping ${{ matrix.uni }}"
+      - if: env.HAS_ACCOUNT == 'true'
+        uses: actions/checkout@v4
+      - if: env.HAS_ACCOUNT == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: 'pip'
-      - name: Install dependencies
+      - if: env.HAS_ACCOUNT == 'true'
+        name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Run booking
+      - if: env.HAS_ACCOUNT == 'true'
+        name: Run booking (${{ matrix.uni }})
         env:
-          USERNAME: ${{ secrets.USERNAME }}
-          PASSWORD: ${{ secrets.PASSWORD }}
-          # Optional config via repository Variables (Settings → Secrets and
-          # variables → Actions → Variables). Leave unset to use defaults.
-          BOOKING_MODE: ${{ vars.BOOKING_MODE }}
-          BOOK_DAYS_AHEAD: ${{ vars.BOOK_DAYS_AHEAD }}
-          BOOKING_TIMES: ${{ vars.BOOKING_TIMES }}
-          FLOORS: ${{ vars.FLOORS }}
-          PREFERRED_RESOURCES: ${{ vars.PREFERRED_RESOURCES }}
-          USE_ANNY_FAVORITES: ${{ vars.USE_ANNY_FAVORITES }}
+          USERNAME: ${{ secrets[format('{0}_USERNAME', matrix.uni)] }}
+          PASSWORD: ${{ secrets[format('{0}_PASSWORD', matrix.uni)] }}
+          SSO_PROVIDER: ${{ vars[format('{0}_SSO_PROVIDER', matrix.uni)] || matrix.uni }}
+          BOOKING_MODE: ${{ vars[format('{0}_BOOKING_MODE', matrix.uni)] || vars.BOOKING_MODE }}
+          BOOK_DAYS_AHEAD: ${{ vars[format('{0}_BOOK_DAYS_AHEAD', matrix.uni)] || vars.BOOK_DAYS_AHEAD }}
+          BOOKING_TIMES: ${{ vars[format('{0}_BOOKING_TIMES', matrix.uni)] || vars.BOOKING_TIMES }}
+          FLOORS: ${{ vars[format('{0}_FLOORS', matrix.uni)] || vars.FLOORS }}
+          PREFERRED_RESOURCES: ${{ vars[format('{0}_PREFERRED_RESOURCES', matrix.uni)] || vars.PREFERRED_RESOURCES }}
+          USE_ANNY_FAVORITES: ${{ vars[format('{0}_USE_ANNY_FAVORITES', matrix.uni)] || vars.USE_ANNY_FAVORITES }}
         run: python main.py
