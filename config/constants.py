@@ -63,6 +63,10 @@ SNIPE_ACTIVATE_MIN = int(getenv("SNIPE_ACTIVATE_MIN") or "20")
 # long (absorbs clock jitter / a few seconds of "not yet open").
 SNIPE_WINDOW_S = int(getenv("SNIPE_WINDOW_S") or "20")
 
+# "opening" mode only: when the run starts long before the opening, sleep and
+# log in again this many minutes before it (keeps the anny session fresh).
+RELOGIN_LEAD_MIN = int(getenv("RELOGIN_LEAD_MIN") or "4")
+
 # Organization-specific checkout agreements you accept for every booking
 # (comma-separated keys of the "agreements.<key>" checkboxes), e.g. "lmu-ub" for
 # the LMU library's Terms of Use / Privacy Policy. Only list ones you agreed to.

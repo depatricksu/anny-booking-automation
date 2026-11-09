@@ -1,12 +1,19 @@
-name: Test - LMU Philo group room Mon 16 Nov
+name: Test - LMU Philo group room Tue 17 Nov
 
-# One-off test: at Mon 9 Nov 00:00 (Berlin) the slots for Mon 16 Nov open.
-# Starts Sun 8 Nov 23:30 CET (22:30 UTC), waits for midnight and books ONE
-# Philologicum group room (longest window first). Delete after the test.
+# One-off test: at Tue 10 Nov 00:00 (Berlin) the slots for Tue 17 Nov open.
+# Starts Mon 9 Nov 22:00 CET (21:00 UTC), waits for midnight and books ONE
+# Philologicum group room (longest window first). A backup start at 23:00 CET
+# covers GitHub's late starts; the concurrency group runs them one after the
+# other, so a run that starts after the opening just exits. Delete after the test.
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 22 8 11 *'
+    - cron: '0 21 9 11 *'   # Mon 9 Nov 22:00 CET
+    - cron: '0 22 9 11 *'   # backup, 23:00 CET
+
+concurrency:
+  group: lmu-booking-test
+  cancel-in-progress: false
 
 jobs:
   book:
@@ -18,7 +25,7 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
       - run: pip install -r requirements.txt
-      - name: Book one Philologicum group room for Mon 16 Nov
+      - name: Book one Philologicum group room for Tue 17 Nov
         env:
           USERNAME: ${{ secrets.LMU_USERNAME }}
           PASSWORD: ${{ secrets.LMU_PASSWORD }}
@@ -26,10 +33,10 @@ jobs:
           ACCEPT_AGREEMENTS: lmu-ub
           FLOORS: philologicum
           BOOK_DAYS_AHEAD: '7'
-          BOOK_WEEKDAYS: mon
-          BOOK_UNTIL: '2026-11-16'
+          BOOK_WEEKDAYS: tue
+          BOOK_UNTIL: '2026-11-17'
           MAX_BOOKINGS: '1'
-          SNIPE_ACTIVATE_MIN: '45'
+          SNIPE_ACTIVATE_MIN: '150'
           SNIPE_WINDOW_S: '30'
           USE_ANNY_FAVORITES: 'False'
           BOOKING_TIMES: >-

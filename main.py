@@ -38,6 +38,7 @@ from config.constants import (
     MAX_BOOKINGS,
     PASSWORD,
     PREFERRED_RESOURCES,
+    RELOGIN_LEAD_MIN,
     SNIPE_ACTIVATE_MIN,
     SNIPE_WINDOW_S,
     SSO_PROVIDER,
@@ -249,6 +250,23 @@ def run_opening_mode(cookies, session, ref, tz):
     safe_print(f"{ts()} ── opening mode — target +{BOOK_DAYS_AHEAD}d, {len(upcoming)} floor(s) ──")
     for fire, _, _, name in upcoming:
         safe_print(f"{ts()}   {fire.strftime('%H:%M:%S')}  {name}")
+
+    # Long wait (early start to absorb late cron starts): sleep until shortly
+    # before the opening, then log in again so the session is fresh.
+    relogin_at = nearest - datetime.timedelta(minutes=RELOGIN_LEAD_MIN)
+    if relogin_at - datetime.datetime.now(tz) > datetime.timedelta(minutes=5):
+        wait = (relogin_at - datetime.datetime.now(tz)).total_seconds()
+        safe_print(f"{ts()} 💤 sleeping {wait / 60:.0f} min, then logging in again "
+                   f"at {relogin_at.strftime('%H:%M:%S')}...")
+        time.sleep(wait)
+        fresh = AnnySession(USERNAME, PASSWORD, provider_name=SSO_PROVIDER)
+        fresh_cookies = fresh.login()
+        if fresh_cookies:
+            session, cookies = fresh, fresh_cookies
+            ref = BookingClient(cookies, customer_account_id=session.customer_account_id)
+            safe_print(f"{ts()} ✅ Re-login successful")
+        else:
+            safe_print(f"{ts()} ⚠️ Re-login failed — continuing with the first session")
 
     secured = set()
     for fire, url, svc, name in upcoming:
