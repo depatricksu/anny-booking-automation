@@ -4,16 +4,15 @@ name: Library Reservation
 # workflow_dispatch API), because GitHub's built-in `schedule:` cron can be
 # delayed by 10-15 min — which matters for hitting the exact opening time.
 on:
+  # Started by cron-job.org (Thursday 23:50 Berlin) via the workflow_dispatch API.
+  # The GitHub `schedule:` timer was removed on purpose: it is often late and
+  # would book a second time on top of cron-job.org.
   workflow_dispatch:
-  # Nightly run for LMU's 00:00 (Europe/Berlin) release. GitHub cron is UTC and
-  # may start 10-15 min late, so start ~23:30 Berlin and let the job wait for
-  # midnight (LMU_SNIPE_ACTIVATE_MIN=45). Two entries cover CET and CEST; the
-  # one that is not ~30 min before midnight exits immediately.
-  schedule:
-    # Thursday nights only: Friday 00:00 releases the Friday one week later
-    # (LMU_BOOK_WEEKDAYS=fri). Use '* * *' instead of '* * 4' for every night.
-    - cron: '30 22 * * 4'   # Thu 23:30 CET (winter)
-    - cron: '30 21 * * 4'   # Thu 23:30 CEST (summer)
+
+# Only one booking run at a time; a second trigger waits instead of racing.
+concurrency:
+  group: lmu-booking
+  cancel-in-progress: false
 
 jobs:
   book:
