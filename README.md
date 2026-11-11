@@ -130,6 +130,7 @@ Secrets/Variables). Only `USERNAME`/`PASSWORD` are required.
 | `ACCEPT_AGREEMENTS` | *(none)* | Library-specific checkout agreements you accept, e.g. `lmu-ub` (LMU library Terms of Use / Privacy Policy). Required for LMU. |
 | `MAX_BOOKINGS` | *(per window)* | `1` = treat `BOOKING_TIMES` as alternatives and stop after the first booking. |
 | `BOOK_UNTIL` | *(none)* | Last bookable day, `YYYY-MM-DD` (e.g. semester end). |
+| `BOOKING_TIMES_BY_WEEKDAY` | *(none)* | Different windows per target weekday, e.g. `fri=13:00-17:00; tue=16:00-20:00; sun=15:00-19:00`. Overrides `BOOKING_TIMES` and `BOOK_WEEKDAYS`. |
 | `BOOK_WEEKDAYS` | *(every day)* | Only book when the target day is one of these, e.g. `fri` or `mon,wed,fri`. |
 | `USE_ANNY_FAVORITES` | `True` | Also auto-prioritize the seats/floors you starred in anny. |
 | `SNIPE_ACTIVATE_MIN` | `20` | Opening mode: only wake up when an opening is within N minutes. |

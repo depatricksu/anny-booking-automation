@@ -40,3 +40,17 @@ def test_book_until(monkeypatch):
     monkeypatch.setattr(main, "BOOK_UNTIL", "2027-03-31")
     assert main.target_day_allowed(datetime.date(2027, 3, 31))
     assert not main.target_day_allowed(datetime.date(2027, 4, 2))
+
+
+def test_times_by_weekday(monkeypatch):
+    import main
+    by_day = {4: [{"start": "13:00:00", "end": "17:00:00"}],
+              1: [{"start": "16:00:00", "end": "20:00:00"}],
+              6: [{"start": "15:00:00", "end": "19:00:00"}]}
+    monkeypatch.setattr(main, "BOOKING_TIMES_BY_WEEKDAY", by_day)
+    monkeypatch.setattr(main, "BOOK_UNTIL", None)
+    monkeypatch.setattr(main, "BOOK_WEEKDAYS", [4])  # ignored when by-weekday is set
+    assert main.target_day_allowed(datetime.date(2026, 11, 17))      # Tue
+    assert not main.target_day_allowed(datetime.date(2026, 11, 18))  # Wed
+    assert main.windows_for(datetime.date(2026, 11, 22)) == by_day[6]  # Sun
+    assert main.windows_for(datetime.date(2026, 11, 20)) == by_day[4]  # Fri

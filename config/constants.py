@@ -80,6 +80,28 @@ MAX_BOOKINGS = int(getenv("MAX_BOOKINGS") or "0")
 # Last day that may be booked (YYYY-MM-DD), e.g. the end of the semester.
 BOOK_UNTIL = (getenv("BOOK_UNTIL") or "").strip() or None
 
+# Different time windows per weekday of the target day, e.g.
+# "fri=13:00-17:00; tue=16:00-20:00; sun=15:00-19:00" (several windows per day:
+# "fri=13:00-17:00,09:00-12:00"). When set, only these weekdays are booked and
+# BOOKING_TIMES / BOOK_WEEKDAYS are ignored.
+def _hms(t):
+    t = t.strip()
+    return t if t.count(":") == 2 else f"{t}:00"
+
+
+BOOKING_TIMES_BY_WEEKDAY = {}
+for _part in (getenv("BOOKING_TIMES_BY_WEEKDAY") or "").split(";"):
+    if "=" not in _part:
+        continue
+    _day, _wins = _part.split("=", 1)
+    _day = _day.strip().lower()[:3]
+    if _day not in ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]:
+        continue
+    BOOKING_TIMES_BY_WEEKDAY[["mon", "tue", "wed", "thu", "fri", "sat", "sun"].index(_day)] = [
+        {"start": _hms(w.split("-")[0]), "end": _hms(w.split("-")[1])}
+        for w in _wins.split(",") if "-" in w
+    ]
+
 # Only book when the target day falls on one of these weekdays (comma-separated,
 # e.g. "fri" or "mon,wed,fri"). Empty = every day.
 _WEEKDAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]

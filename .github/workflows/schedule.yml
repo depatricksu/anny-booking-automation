@@ -52,6 +52,7 @@ jobs:
           FLOORS: ${{ vars[format('{0}_FLOORS', matrix.uni)] || vars.FLOORS }}
           PREFERRED_RESOURCES: ${{ vars[format('{0}_PREFERRED_RESOURCES', matrix.uni)] || vars.PREFERRED_RESOURCES }}
           USE_ANNY_FAVORITES: ${{ vars[format('{0}_USE_ANNY_FAVORITES', matrix.uni)] || vars.USE_ANNY_FAVORITES }}
+          BOOKING_TIMES_BY_WEEKDAY: ${{ vars[format('{0}_BOOKING_TIMES_BY_WEEKDAY', matrix.uni)] || vars.BOOKING_TIMES_BY_WEEKDAY }}
           BOOK_WEEKDAYS: ${{ vars[format('{0}_BOOK_WEEKDAYS', matrix.uni)] || vars.BOOK_WEEKDAYS }}
           ACCEPT_AGREEMENTS: ${{ vars[format('{0}_ACCEPT_AGREEMENTS', matrix.uni)] || vars.ACCEPT_AGREEMENTS }}
           MAX_BOOKINGS: ${{ vars[format('{0}_MAX_BOOKINGS', matrix.uni)] || vars.MAX_BOOKINGS }}
