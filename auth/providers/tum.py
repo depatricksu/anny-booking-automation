@@ -16,14 +16,20 @@ class TUMProvider(SSOProvider):
         self.session.headers.pop('x-inertia', None)
         self.session.headers.pop('x-inertia-version', None)
 
+        # anny answers the federation URL with 409 while Inertia headers are
+        # present; re-fetch it as a plain browser request to reach the IdP.
+        idp_page = self.redirect_response
+        if 'csrf_token' not in idp_page.text:
+            idp_page = self.session.get(idp_page.url)
+
         csrf_token = extract_html_value(
-            self.redirect_response.text,
+            idp_page.text,
             r'name="csrf_token" value="([^"]+)"'
         )
 
         # First request to get correct CSRF token
         response = self.session.post(
-            self.redirect_response.url,
+            idp_page.url,
             data={
                 'csrf_token': csrf_token,
                 'shib_idp_ls_exception.shib_idp_session_ss': '',
