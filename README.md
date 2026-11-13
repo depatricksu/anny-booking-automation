@@ -1,266 +1,173 @@
-# 📚 Anny Booking Automation
+# 📚 Anny Booking Automation — LMU edition
 
-[![Stars](https://img.shields.io/github/stars/wiestju/anny-booking-automation?style=flat-square)](https://github.com/wiestju/anny-booking-automation/stargazers)
-[![Forks](https://img.shields.io/github/forks/wiestju/anny-booking-automation?style=flat-square)](https://github.com/wiestju/anny-booking-automation/network/members)
-[![CI](https://github.com/wiestju/anny-booking-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/wiestju/anny-booking-automation/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/wiestju/anny-booking-automation?style=flat-square)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square)](https://www.python.org/)
+Automatically books **LMU library group rooms and study seats** on [anny.eu](https://anny.eu)
+the moment they are released, every week, with no server of your own.
 
-> ⭐ If this saves you the scramble for a study space — give it a star!
+> **Credit:** this is a fork of
+> [wiestju/anny-booking-automation](https://github.com/wiestju/anny-booking-automation)
+> (MIT License, © 2025 github.com/wiestju), which built the original tool for KIT and TUM.
+> This fork adds LMU München support and a fully automated weekly setup. All original
+> licensing terms apply; see [LICENSE](LICENSE).
 
----
+⚠️ Please use it responsibly; see [DISCLAIMER](DISCLAIMER.md). It books with your own
+account, one room per time slot, exactly as you could by hand.
 
-**Automatically reserve study spaces and library seats on [anny.eu](https://anny.eu)** — the
-booking platform many university libraries use, including the **Karlsruhe Institute of
-Technology (KIT)** and the **Technical University of Munich (TUM)**.
+## What this fork adds
 
-The tool logs in via your university's SAML Single Sign-On, then books a seat for you —
-either the exact moment new slots are released, or whatever is free right now. It runs
-unattended via GitHub Actions (no server needed), grabs your favorite seat first, and
-books only what you could book by hand.
+| Change | Why |
+| --- | --- |
+| **LMU login** (`SSO_PROVIDER=lmu`) | Signs in through LMU's Shibboleth login (`lmuidp.lrz.de`) with your LMU campus ID. |
+| **LMU library terms** (`ACCEPT_AGREEMENTS=lmu-ub`) | LMU's library requires its own Terms of Use / Privacy Policy checkbox at checkout; without it every booking is rejected. |
+| **Midnight releases** | LMU releases slots **7 days ahead at 00:00**. The original only looked for openings later the same day, so a run started at 23:50 never booked. |
+| **Per-weekday times** (`BOOKING_TIMES_BY_WEEKDAY`) | e.g. Friday 13–17, Tuesday 16–20, Sunday 15–19, each day with its own window. |
+| **Semester end** (`BOOK_UNTIL`) | Stops booking after a date, e.g. `2027-03-31`. |
+| **One booking per run** (`MAX_BOOKINGS=1`) | Treats several time windows as alternatives: first one that books wins. |
+| **Fresh login before the release** | If a run starts long before midnight, it sleeps and logs in again 4 minutes before, so the session doesn't expire. |
+| **Several accounts** (`ENV_FILE`, `scripts/run_all.sh`) | e.g. an LMU and a TUM login side by side, one settings file each. |
+| **Honest results** | A checkout rejected for missing terms is reported as *NOT booked* instead of "Secured". |
+| **Fixes** | Account-ID detection for LMU's anny pages; the workflow now passes `SSO_PROVIDER` (it was missing). |
 
-> 🇩🇪 **Für Studierende:** Dieses Tool reserviert automatisch Lernplätze in der
-> Universitätsbibliothek auf anny.eu — pünktlich zur Freischaltung, mit deinem
-> Lieblingsplatz zuerst. Unterstützt KIT, TUM und weitere anny-basierte Bibliotheken.
+KIT and TUM work as before.
 
-⚠️ **Please use it responsibly** — see the [DISCLAIMER](DISCLAIMER.md). It logs in as you and
-reserves a single seat per time slot, exactly as you would by hand.
+## How LMU releases rooms
 
-## 📋 Table of Contents
+- Every LMU area on anny releases slots **7 days in advance at 00:00** (Berlin time).
+  On Thursday at midnight, the Friday one week later opens.
+- Popular slots (e.g. Philologicum group rooms in the afternoon) are gone **within minutes**,
+  so the booking has to fire right at midnight.
+- Philologicum has 4 group rooms, bookable for up to 4 hours.
 
-- [Features](#-features)
-- [Supported Universities](#-supported-universities)
-- [Quick Start](#-quick-start)
-- [AI-Assisted Setup](#-ai-assisted-setup)
-- [Configuration](#-configuration)
-- [How booking works](#-how-booking-works)
-- [Automated Scheduling](#-automated-scheduling)
-- [Adding a New University](#-adding-a-new-university)
-- [Development](#-development)
-- [Help & Support](#-help--support)
-- [License](#-license)
+Check the release times yourself with `python scripts/check_advance.py`.
 
-## ✨ Features
+## Full automation: cron-job.org + GitHub Actions
 
-- **Auto-discovery** — finds every bookable floor/building for your account after login; no manual API research.
-- **Two booking strategies** — book the instant slots open, or book whatever is free right now.
-- **Books your favorite seat first** — auto-prioritizes the seats and floors you starred in anny, plus your own preferences.
-- **Pluggable SSO** — KIT and TUM built in; easily extended to any anny university.
-- **Calm & fair** — one seat per time slot, tried gently one at a time; no request storms.
-- **Zero-config option** — sensible defaults; everything overridable via `.env` or GitHub Secrets/Variables, no code changes.
-- **Runs anywhere** — GitHub Actions + cron-job.org (no server), or any Linux cron.
+GitHub's own scheduler is **not** reliable enough for a midnight release. In testing it
+started 3 h 20 min late once and skipped a run entirely. So the run is started by
+[cron-job.org](https://cron-job.org) (free, minute-exact), and GitHub Actions does the booking.
 
-## 🏫 Supported Universities
-
-| University | SSO Provider | Status |
-| --- | --- | --- |
-| Karlsruhe Institute of Technology (KIT) | `kit` | ✅ Supported |
-| Technical University of Munich (TUM) | `tum` | ✅ Supported |
-| Ludwig-Maximilians-Universität München (LMU) | `lmu` | 🧪 Added (login flow mirrors TUM; not yet verified with a real account) |
-| Other anny-based libraries | Custom provider | [Add yours →](#-adding-a-new-university) |
-
-## ⚡ Quick Start
-
-### 🚀 Automated (recommended) — runs itself in the cloud, no server
-
-This is how you actually use it day-to-day. **A local clone runs once and exits; it does not
-schedule anything** — for daily automation, deploy it to GitHub Actions:
-
-1. **Fork** this repository (top-right **Fork** button). Your credentials live in GitHub
-   *Secrets*, never in the code — so a public fork is perfectly safe. Prefer a private copy?
-   Create a new **private** repo and push this project into it.
-2. Add your login as **GitHub Secrets** (Settings → Secrets and variables → Actions → Secrets):
-   `USERNAME` and `PASSWORD`.
-3. *(Optional)* Add config like `SSO_PROVIDER`, `FLOORS`, `PREFERRED_RESOURCES` as repository
-   **Variables** on the same page.
-4. Schedule the daily run via **cron-job.org** — see [Automated Scheduling](#-automated-scheduling).
-
-That's it — it now books for you every day. New to GitHub/secrets/schedulers? Let an AI walk
-you through it → [AI-Assisted Setup](#-ai-assisted-setup).
-
-### 🧪 Run locally (optional — for testing credentials or development)
-
-```bash
-git clone https://github.com/wiestju/anny-booking-automation.git
-cd anny-booking-automation
-python -m venv venv
-source venv/bin/activate            # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env                # then edit .env (USERNAME, PASSWORD, SSO_PROVIDER)
-python main.py
+```
+cron-job.org (every night 23:50 Berlin)
+   └─▶ GitHub API: start workflow "Library Reservation"
+          └─▶ logs in via LMU → waits → logs in again at 23:56 → books at 00:00
+              (exits right away on nights where the target day isn't one you want)
 ```
 
-A local run just verifies everything works and books once. Everything has sensible defaults,
-and your anny favorites are picked up automatically.
+### 1. Copy the repo
 
-## 🤖 AI-Assisted Setup
+Fork it, or create a new **private** repo and push this code into it. Your credentials live
+in GitHub Secrets, never in the code.
 
-Not a programmer? The whole setup — forking, GitHub Secrets, a scheduler — is easiest with an
-AI assistant guiding you one step at a time. You never touch the code yourself.
+### 2. GitHub Secrets and Variables
 
-The smoothest path is **[Claude Code](https://claude.com/claude-code)**: it can clone the
-repo, edit your `.env`, and walk you through GitHub Secrets and cron-job.org interactively
-on your own machine. Or paste this prompt into [Claude](https://claude.ai):
+In your repo: **Settings → Secrets and variables → Actions**.
 
-```text
-I want to set up anny-booking-automation to automatically book library seats at my university.
-The repo is: https://github.com/wiestju/anny-booking-automation
-
-Please guide me through the full setup step by step, asking me one question at a time.
-My university is: [KIT / TUM / other]. I have little technical experience.
-```
-
-It will walk you through forking the repo, adding your credentials as GitHub Secrets,
-creating an access token, and scheduling the daily run — one step at a time.
-
-## 🔧 Configuration
-
-All settings are environment variables (in `.env` locally, or GitHub Actions
-Secrets/Variables). Only `USERNAME`/`PASSWORD` are required.
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `USERNAME`, `PASSWORD` | — | Your university SSO credentials (required). |
-| `SSO_PROVIDER` | `kit` | Which SSO provider to use (`kit`, `tum`, `lmu`, …). |
-| `BOOKING_MODE` | `opening` | `opening` = book at each floor's real opening time; `immediate` = book what's free now. |
-| `BOOK_DAYS_AHEAD` | `4` | Book the day this many days ahead. |
-| `BOOKING_TIMES` | 3 windows | Comma-separated `HH:MM:SS-HH:MM:SS` windows, in priority order. |
-| `FLOORS` | *(all)* | Empty = all floors. Otherwise a comma-separated priority list of name/slug substrings, e.g. `lehrbuchsammlung`. |
-| `PREFERRED_RESOURCES` | *(none)* | Favorite seats tried first, e.g. `A1.007`. Find names via `scripts/list_resources.py`. |
-| `ACCEPT_AGREEMENTS` | *(none)* | Library-specific checkout agreements you accept, e.g. `lmu-ub` (LMU library Terms of Use / Privacy Policy). Required for LMU. |
-| `MAX_BOOKINGS` | *(per window)* | `1` = treat `BOOKING_TIMES` as alternatives and stop after the first booking. |
-| `BOOK_UNTIL` | *(none)* | Last bookable day, `YYYY-MM-DD` (e.g. semester end). |
-| `BOOKING_TIMES_BY_WEEKDAY` | *(none)* | Different windows per target weekday, e.g. `fri=13:00-17:00; tue=16:00-20:00; sun=15:00-19:00`. Overrides `BOOKING_TIMES` and `BOOK_WEEKDAYS`. |
-| `BOOK_WEEKDAYS` | *(every day)* | Only book when the target day is one of these, e.g. `fri` or `mon,wed,fri`. |
-| `USE_ANNY_FAVORITES` | `True` | Also auto-prioritize the seats/floors you starred in anny. |
-| `SNIPE_ACTIVATE_MIN` | `20` | Opening mode: only wake up when an opening is within N minutes. |
-| `DEBUG` | `False` | Verbose request logging. |
-
-Booking exactly one seat per time window is the default. The windows are attempted in
-parallel; within each, seats are tried one at a time — favorites first — stopping on the
-first success.
-
-## 👥 Multiple accounts (e.g. LMU + TUM)
-
-**Locally:** put each account in its own file in the repo root — e.g. `lmu.env` and
-`tum.env` (copies of `.env.example`; `*.env` is git-ignored) — and run them in parallel:
-
-```bash
-scripts/run_all.sh                 # every *.env file
-scripts/run_all.sh lmu.env tum.env # or pick
-ENV_FILE=tum.env venv/bin/python scripts/check_advance.py   # any script, one account
-```
-
-**GitHub Actions:** the workflow runs one job per university. Add secrets
-`LMU_USERNAME`/`LMU_PASSWORD` and/or `TUM_USERNAME`/`TUM_PASSWORD`; jobs without a username
-secret are skipped. Variables can be per-university (`LMU_FLOORS`, `TUM_BOOK_DAYS_AHEAD`, …)
-or shared (`FLOORS`, …). LMU opens slots 7 days ahead at 00:00, so set `LMU_BOOK_DAYS_AHEAD=7`.
-
-## 🎯 How booking works
-
-### Opening mode (default)
-
-Anny releases slots ahead of time — for each floor, at a configured *advance start time*, a
-set number of days in advance. The tool reads these values live from anny (so it
-self-adjusts if your library changes them), waits for each floor's real opening moment, and
-calmly books.
-
-> **KIT example:** the study floors open in the evening, staggered per floor
-> (~19:14–19:26 Berlin time), for the day 4 ahead. The run is scheduled to start shortly
-> before that and books right as each floor opens — when seats are plentiful. Your library's
-> times will differ; the tool figures them out on its own. Check yours with
-> `python scripts/check_advance.py`.
-
-### Immediate mode
-
-`BOOKING_MODE=immediate` skips the timing logic and books whatever is available right now
-for the target day — handy for libraries without an advance-release mechanism, or for a
-quick test.
-
-## ⏰ Automated Scheduling
-
-Run it daily from **GitHub Actions**, triggered precisely by
-[cron-job.org](https://cron-job.org). (GitHub's built-in `schedule:` cron can be delayed
-10–15 min and is UTC-only, which is why an external trigger is used. Prefer your own server?
-Any Linux cron works too — point it at `scripts/snipe.sh`.)
-
-**1. Add GitHub Secrets** (Settings → Secrets and variables → Actions → Secrets):
+**Secrets:**
 
 | Secret | Value |
 | --- | --- |
-| `USERNAME` | Your university username |
-| `PASSWORD` | Your university password |
+| `LMU_USERNAME` | your LMU campus ID (or LMU e-mail) |
+| `LMU_PASSWORD` | your LMU password |
 
-Optionally add any config from the table above as repository **Variables** (same page).
+**Variables** (example: Philologicum group rooms three times a week until semester end):
 
-**2. Create a GitHub Personal Access Token** with Actions read/write on this repo.
+| Variable | Example |
+| --- | --- |
+| `LMU_ACCEPT_AGREEMENTS` | `lmu-ub` *(required for LMU)* |
+| `LMU_FLOORS` | `philologicum` |
+| `LMU_BOOKING_TIMES_BY_WEEKDAY` | `fri=13:00-17:00; tue=16:00-20:00; sun=15:00-19:00` |
+| `LMU_BOOK_DAYS_AHEAD` | `7` |
+| `LMU_BOOK_UNTIL` | `2027-03-31` |
+| `LMU_SNIPE_ACTIVATE_MIN` | `45` |
 
-**3. Configure cron-job.org:**
+Every variable can be set per university (`LMU_…`, `TUM_…`) or without a prefix for all.
+A university whose `<UNI>_USERNAME` secret is missing is skipped.
+
+### 3. GitHub token
+
+Create a fine-grained token at **github.com/settings/personal-access-tokens/new**:
+
+- **Repository access:** only select repositories → your copy of this repo
+- **Permissions:** **Actions → Read and write** (in the newer UI: *Add permissions* → Actions → change *Read-only* to *Read and write*)
+
+### 4. cron-job.org job
+
+Create a free account at [cron-job.org](https://cron-job.org) and add one job:
 
 | Setting | Value |
 | --- | --- |
-| URL | `https://api.github.com/repos/YOUR_USER/anny-booking-automation/actions/workflows/schedule.yml/dispatches` |
-| Method | `POST` |
-| Schedule | shortly **before** your earliest floor opening, timezone `Europe/Berlin` |
-| Body | `{"ref":"main"}` |
-| Headers | `Authorization: Bearer YOUR_TOKEN`, `Accept: application/vnd.github+json` |
+| URL | `https://api.github.com/repos/YOUR_USER/YOUR_REPO/actions/workflows/schedule.yml/dispatches` |
+| Schedule | every day, **23:50**, time zone **Europe/Berlin** |
+| Request method | `POST` |
+| Headers | `Accept: application/vnd.github+json` and `Authorization: Bearer YOUR_TOKEN` |
+| Request body | `{"ref":"main"}` |
 
-> **KIT example:** trigger at **19:05** (a few minutes before the ~19:14 opening). The job
-> then waits for each floor and books. Run **one** source only (GitHub Actions *or* your own
-> cron) to avoid two attempts colliding.
+Create **only one** job. The workflow has a lock so runs never overlap, but a second trigger
+could still book a second room.
 
-## 🎓 Adding a New University
+A successful trigger returns HTTP **204**. `401` means the token is wrong, `404` usually means the token lacks
+*Actions: Read and write*, and `422` means the body is missing. cron-job.org's *Test run* button may
+fail with a verification error inside some embedded browsers; try it in a normal browser,
+or wait for the first scheduled run and check the job's **History**.
 
-The auth layer is pluggable. Create `auth/providers/youruni.py`:
+### 5. Check the results
 
-```python
-from auth.providers.base import SSOProvider
+In your repo under **Actions → Library Reservation**, each run's log shows
+`✅ BOOKED resource=… ` or the reason it didn't book (`0 available`, `NOT booked — terms`, …).
 
-class YourUniProvider(SSOProvider):
-    name = "youruni"
-    domain = "youruni.edu"
-
-    def authenticate(self) -> str:
-        # Implement the SAML flow using self.session, self.redirect_response,
-        # self.username, self.password. Return the HTML containing SAMLResponse.
-        ...
-```
-
-Register it in `auth/providers/__init__.py`, then set `SSO_PROVIDER=youruni`. New
-universities are the most welcome contribution — see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## 🛠️ Development
+## Run it locally
 
 ```bash
-pip install -e ".[dev]"   # runtime + dev deps (pytest, ruff)
-ruff check .              # lint
-pytest                    # run the test suite (no credentials needed)
+python -m venv venv
+venv/bin/pip install -r requirements.txt
+cp .env.example lmu.env      # fill in USERNAME, PASSWORD, SSO_PROVIDER="lmu", ACCEPT_AGREEMENTS="lmu-ub"
 ```
 
-CI runs ruff + pytest on every push/PR across Python 3.10–3.12. Tests cover the pure logic
-(`booking/selection.py`, `utils/helpers.py`) and **need no credentials or network**.
+Useful commands (all read-only except the last two):
 
-```text
-anny-booking-automation/
-├── main.py                 # Entry point (both booking modes)
-├── config/constants.py     # Settings (all env-overridable)
-├── auth/
-│   ├── session.py          # SAML SSO login
-│   └── providers/          # Pluggable SSO providers (base, kit, tum, …)
-├── booking/
-│   ├── client.py           # anny API client
-│   └── selection.py        # Pure floor/seat prioritization (unit-tested)
-├── scripts/                # check_advance.py, list_resources.py, run helpers
-└── tests/                  # pytest suite
+```bash
+ENV_FILE=lmu.env venv/bin/python scripts/check_advance.py     # areas and their release times
+ENV_FILE=lmu.env venv/bin/python scripts/list_resources.py    # room/seat names for PREFERRED_RESOURCES
+ENV_FILE=lmu.env venv/bin/python main.py                      # one booking run
+scripts/run_all.sh                                            # one run per *.env file, in parallel
 ```
 
-## 🆘 Help & Support
+`*.env` files are git-ignored, so your password is never committed.
+In `opening` mode a run exits unless a release is within `SNIPE_ACTIVATE_MIN` minutes.
+Set `BOOKING_MODE="immediate"` to book whatever is free right now.
 
-Something not working, or want your university supported? **[Open an issue](https://github.com/wiestju/anny-booking-automation/issues/new/choose)** — bug reports and
-new-university requests are welcome, and setup questions are fine too. Please redact any
-credentials from logs you paste. Contributions are very welcome; see
-[CONTRIBUTING.md](CONTRIBUTING.md).
+## All settings
 
-## 📄 License
+| Variable | Default | Description |
+| --- | --- | --- |
+| `USERNAME`, `PASSWORD` | — | University login (required). |
+| `SSO_PROVIDER` | `kit` | `kit`, `tum` or `lmu`. |
+| `ACCEPT_AGREEMENTS` | *(none)* | Library-specific checkout agreements you accept, e.g. `lmu-ub`. |
+| `BOOKING_MODE` | `opening` | `opening` = book at the release time; `immediate` = book what's free now. |
+| `BOOK_DAYS_AHEAD` | `4` | Book the day this many days ahead (`7` for LMU). |
+| `BOOKING_TIMES` | 3 windows | `HH:MM:SS-HH:MM:SS`, comma-separated, in priority order. |
+| `BOOKING_TIMES_BY_WEEKDAY` | *(none)* | Windows per target weekday; overrides `BOOKING_TIMES` and `BOOK_WEEKDAYS`. |
+| `BOOK_WEEKDAYS` | *(every day)* | Only book these target weekdays, e.g. `fri` or `mon,wed`. |
+| `BOOK_UNTIL` | *(none)* | Last bookable day, `YYYY-MM-DD`. |
+| `MAX_BOOKINGS` | *(per window)* | `1` = windows are alternatives, stop after the first booking. |
+| `FLOORS` | *(all)* | Areas in priority order (name substrings), e.g. `philologicum`. |
+| `PREFERRED_RESOURCES` | *(none)* | Favorite seats/rooms tried first. |
+| `USE_ANNY_FAVORITES` | `True` | Also prioritize what you starred in anny. |
+| `SNIPE_ACTIVATE_MIN` | `20` | Only stay running if a release is within N minutes. |
+| `RELOGIN_LEAD_MIN` | `4` | Log in again N minutes before the release after a long wait. |
+| `ENV_FILE` | `.env` | Which settings file to load. |
+| `DEBUG` | `False` | Verbose request logging. |
 
-[MIT](LICENSE) — please use responsibly, see [DISCLAIMER.md](DISCLAIMER.md).
+## Development
+
+```bash
+venv/bin/pip install ruff pytest
+venv/bin/ruff check . --exclude venv
+venv/bin/pytest
+```
+
+The tests need no credentials or network.
+
+## License
+
+[MIT](LICENSE). Original work © 2025 [wiestju](https://github.com/wiestju/anny-booking-automation);
+LMU support and automation changes in this fork are released under the same license.
